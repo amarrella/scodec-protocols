@@ -3,13 +3,14 @@ package scodec.protocols
 import language.higherKinds
 
 import fs2._
+import fs2.Chunk
 
 sealed abstract class Transform[-I,+O] {
 
   type S
   val initial: S
-  val transform: (S,I) => Segment[O,S]
-  val onComplete: S => Segment[O,Unit]
+  val transform: (S,I) => Chunk[O]
+  val onComplete: S => Chunk[O]
 
   def toPipe[F[_]]: Pipe[F,I,O] =
     _.pull.
@@ -77,7 +78,7 @@ sealed abstract class Transform[-I,+O] {
 object Transform {
   type Aux[S0,-I,+O] = Transform[I,O] { type S = S0 }
 
-  def apply[S0,I,O](initial0: S0)(transform0: (S0, I) => Segment[O,S0], onComplete0: S0 => Segment[O,Unit]): Transform.Aux[S0,I,O] =
+  def apply[S0,I,O](initial0: S0)(transform0: (S0, I) => Chunk[O], onComplete0: S0 => Chunk[O]): Transform.Aux[S0,I,O] =
     new Transform[I,O] {
       type S = S0
       val initial = initial0
@@ -85,13 +86,13 @@ object Transform {
       val onComplete = onComplete0
     }
 
-  def stateful[S,I,O](initial: S)(transform: (S, I) => Segment[O,S]): Transform.Aux[S,I,O] =
+  def stateful[S,I,O](initial: S)(transform: (S, I) => Chunk[O]): Transform.Aux[S,I,O] =
     apply(initial)(transform, _ => Segment.empty)
 
   def stateful1[S,I,O](initial: S)(f: (S, I) => (S, O)): Transform.Aux[S,I,O] =
     stateful[S,I,O](initial) { (s,i) => val (s2,o) = f(s,i); Segment.singleton(o).asResult(s2) }
 
-  def stateless[I,O](f: I => Segment[O,Unit]): Transform.Aux[Unit,I,O] =
+  def stateless[I,O](f: I => Chunk[O]): Transform.Aux[Unit,I,O] =
     stateful[Unit,I,O](())((u,i) => f(i))
 
   def lift[I,O](f: I => O): Transform.Aux[Unit,I,O] =

@@ -13,6 +13,7 @@ import scodec.codecs.fixedSizeBits
 
 import scodec.protocols.mpeg._
 import scodec.protocols.mpeg.transport.psi.{ Section, SectionHeader, SectionCodec }
+import fs2.Chunk
 
 /** Supports depacketization of an MPEG transport stream, represented as a stream of `Packet`s. */
 object Demultiplexer {
@@ -51,7 +52,7 @@ object Demultiplexer {
     }
   }
 
-  private case class StepResult[+A](state: Option[DecodeState], output: Segment[Either[DemultiplexerError, A],Unit]) {
+  private case class StepResult[+A](state: Option[DecodeState], output: Chunk[Either[DemultiplexerError, A]]) {
     def ++[AA >: A](that: StepResult[AA]): StepResult[AA] = StepResult(that.state, output ++ that.output)
   }
   private object StepResult {

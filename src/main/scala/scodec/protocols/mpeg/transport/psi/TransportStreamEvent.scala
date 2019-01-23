@@ -7,6 +7,7 @@ import fs2.Segment
 import scodec.bits.BitVector
 
 import psi.{ Table => TableMessage }
+import fs2.Chunk
 
 abstract class TransportStreamEvent
 
@@ -48,7 +49,7 @@ object TransportStreamEvent {
               Segment(PidStamped(pid, Left(err))).asResult(state)
           }
       }, { state =>
-        state.foldLeft(Segment.empty: Segment[PidStamped[Either[MpegError, TableMessage]], Unit]) { case (acc, (pid, gs)) =>
+        state.foldLeft(Segment.empty: Chunk[PidStamped[Either[MpegError, TableMessage]]]) { case (acc, (pid, gs)) =>
           acc ++ sectionsToTablesForPid.onComplete(gs).map(PidStamped(pid, _))
         }
       })
