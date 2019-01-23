@@ -1,7 +1,7 @@
 scodecModule := "scodec-protocols"
 
-enablePlugins(ScodecPrimaryModuleSettings)
-enablePlugins(ScodecPrimaryModuleJVMSettings)
+scodecPrimaryModule
+scodecPrimaryModuleJvm
 
 crossScalaVersions := crossScalaVersions.value.filter { v => v.startsWith("2.11.") || v.startsWith("2.12.") }
 
